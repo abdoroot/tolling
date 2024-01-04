@@ -2,21 +2,21 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/abdoroot/tolling/types"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 type DataProducer interface {
-	Produce() error
+	ProduceData(types.OBUdata) error
 }
 
 type kafkaProducer struct {
 	Producer *kafka.Producer
+	Topic    string
 }
 
-func NewkafkaProducer() (*kafkaProducer, error) {
+func NewkafkaProducer(topic string) (*kafkaProducer, error) {
 	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost"})
 	if err != nil {
 		return nil, err
@@ -28,9 +28,9 @@ func NewkafkaProducer() (*kafkaProducer, error) {
 			switch ev := e.(type) {
 			case *kafka.Message:
 				if ev.TopicPartition.Error != nil {
-					fmt.Printf("Delivery failed: %v\n", ev.TopicPartition)
+					//fmt.Printf("Delivery failed: %v\n", ev.TopicPartition)
 				} else {
-					fmt.Printf("Delivered message to %v\n", ev.TopicPartition)
+					//fmt.Printf("Delivered message to %v\n", ev.TopicPartition)
 				}
 			}
 		}
@@ -38,17 +38,18 @@ func NewkafkaProducer() (*kafkaProducer, error) {
 
 	return &kafkaProducer{
 		Producer: p,
+		Topic:    topic,
 	}, nil
 }
 
-func (p *kafkaProducer) Produce(data types.OBUdata, topic string) error {
+func (p *kafkaProducer) ProduceData(data types.OBUdata) error {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 	return p.Producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{
-			Topic:     &topic,
+			Topic:     &p.Topic,
 			Partition: kafka.PartitionAny,
 		},
 		Value: b,

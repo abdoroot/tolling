@@ -14,12 +14,14 @@ var (
 )
 
 type DataReceiver struct {
-	msgch chan *types.OBUdata
+	msgch    chan *types.OBUdata
+	producer DataProducer
 }
 
-func NewDataReceiver() *DataReceiver {
+func NewDataReceiver(p DataProducer) *DataReceiver {
 	return &DataReceiver{
-		msgch: make(chan *types.OBUdata, 128),
+		msgch:    make(chan *types.OBUdata, 128),
+		producer: p,
 	}
 }
 
@@ -33,10 +35,6 @@ func (dr *DataReceiver) handleWc(w http.ResponseWriter, r *http.Request) {
 }
 
 func (dr *DataReceiver) reciveLoop(c *websocket.Conn) {
-	dataProducer, err := NewkafkaProducer()
-	if err != nil {
-		log.Fatal(err)
-	}
 	for {
 		data := types.OBUdata{}
 		if err := c.ReadJSON(&data); err != nil {
@@ -44,12 +42,21 @@ func (dr *DataReceiver) reciveLoop(c *websocket.Conn) {
 			c.Close()
 			continue
 		}
-		dataProducer.Produce(data, Topic)
+		dr.producer.ProduceData(data)
 	}
 }
 
 func main() {
-	dr := NewDataReceiver()
+	var p DataProducer
+	p, err := NewkafkaProducer(Topic)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//producer middleware
+	pm := NewLoggingMiddleware(p)
+	dr := NewDataReceiver(pm)
+
 	http.HandleFunc("/", dr.handleWc)
 	log.Fatal(http.ListenAndServe(":3000", nil))
 }
