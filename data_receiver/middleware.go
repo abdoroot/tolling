@@ -23,6 +23,6 @@ func (m *LoggingMiddleware) ProduceData(data types.OBUdata) error {
 			"lat":    data.Lat,
 			"long":   data.Long,
 		},
-	)
+	).Info("Produce")
 	return m.Next.ProduceData(data)
 }
