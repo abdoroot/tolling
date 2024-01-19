@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option go_package = "github.com/abdoroot/tolling/types";
+
+service Aggreagator{
+    rpc AggregateDistance(DistanceRequest) returns (None);
+}
+
+message  DistanceRequest{
+    int64 OBUID  =1;
+    double Value = 2;
+    int64 Unix =3;
+}
+
+message None{
+}

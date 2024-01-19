@@ -9,17 +9,21 @@ import (
 	"github.com/abdoroot/tolling/types"
 )
 
-type Client struct {
+type AggregatorClient interface {
+	AggregateInvoice(types.Distance) error
+}
+
+type HTTPClient struct {
 	endPoint string
 }
 
-func New(endPoint string) *Client {
-	return &Client{
+func NewHTTP(endPoint string) *HTTPClient {
+	return &HTTPClient{
 		endPoint: endPoint,
 	}
 }
 
-func (c *Client) AggregateInvoice(data types.Distance) error {
+func (c *HTTPClient) AggregateInvoice(data types.Distance) error {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return err
