@@ -36,3 +36,8 @@ func (c *GRPCClient) AggregateInvoice(data types.Distance) error {
 	_ = resp
 	return err
 }
+
+func (c *GRPCClient) GetInvoice(ObuId int) (*types.Invoice, error) {
+	//todo
+	return nil, nil
+}
