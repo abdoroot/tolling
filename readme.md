@@ -1,1 +1,0 @@
-docker run --name kafka -e KAFKA_CFG_PROCESS_ROLES -p -e KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true bitnami/kafka:latest

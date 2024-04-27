@@ -8,17 +8,23 @@ import (
 	"strconv"
 
 	"github.com/abdoroot/tolling/types"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 )
 
+var (
+	HTTPlistenAddr   = ":3001"
+	GRPClistenAddr   = ":3002"
+	MatrixlistenAddr = ":2112"
+	store            = NewMemoryStore()
+	srv              = NewInvoiceAggregator(store) //service
+)
+
 func main() {
-	var (
-		HTTPlistenAddr = ":3001"
-		GRPClistenAddr = ":3002"
-		store          = NewMemoryStore()
-		srv            = NewInvoiceAggregator(store) //service
-	)
 	srv = NewLogMiddleware(srv)
+	srv = NewMetricsMiddleWare(srv)
+	//matrix http server
+	go makeMartixServer()
 	//Http transport
 	go makeHttpTransport(srv, HTTPlistenAddr)
 	makeGRPCTransport(srv, GRPClistenAddr)
@@ -34,6 +40,13 @@ func makeGRPCTransport(srv Aggregator, listenAddr string) error {
 	types.RegisterAggreagatorServer(grpcServer, NewGrpcAggregaorSever(srv))
 	grpcServer.Serve(l)
 	return nil
+}
+
+func makeMartixServer() {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+	fmt.Println("martex running at port", MatrixlistenAddr)
+	http.ListenAndServe(MatrixlistenAddr, mux)
 }
 
 func makeHttpTransport(srv Aggregator, listenAddr string) {

@@ -1,0 +1,1 @@
+./prometheus --config.file=../toll-calculator/config/prometheus.yml
