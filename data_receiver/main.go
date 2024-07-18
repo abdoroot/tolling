@@ -42,7 +42,11 @@ func (dr *DataReceiver) reciveLoop(c *websocket.Conn) {
 			c.Close()
 			continue
 		}
-		dr.producer.ProduceData(data)
+		err := dr.producer.ProduceData(data)
+		if err != nil {
+			log.Println("produce data error", err)
+			continue
+		}
 	}
 }
 

@@ -27,7 +27,9 @@ func main() {
 	go makeMartixServer()
 	//Http transport
 	go makeHttpTransport(srv, HTTPlistenAddr)
-	makeGRPCTransport(srv, GRPClistenAddr)
+	if err := makeGRPCTransport(srv, GRPClistenAddr); err != nil {
+		fmt.Println("make grpc transport")
+	}
 }
 
 func makeGRPCTransport(srv Aggregator, listenAddr string) error {

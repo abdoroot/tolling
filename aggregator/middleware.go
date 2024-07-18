@@ -13,7 +13,7 @@ type logMiddleWare struct {
 	next Aggregator
 }
 
-func NewLogMiddleware(next Aggregator) Aggregator {
+func NewLogMiddleware(next Aggregator) *logMiddleWare {
 	return &logMiddleWare{
 		next: next,
 	}
@@ -47,7 +47,7 @@ type metricsMiddleWare struct {
 	aggRequestCount prometheus.Counter
 }
 
-func NewMetricsMiddleWare(next Aggregator) Aggregator {
+func NewMetricsMiddleWare(next Aggregator) *metricsMiddleWare {
 	aggRequestCount := promauto.NewCounter(prometheus.CounterOpts{
 		Name: "agg_request_counter",
 	})
