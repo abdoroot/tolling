@@ -1,18 +1,18 @@
-version: '3.8'
-
 services:
   zookeeper:
     image: wurstmeister/zookeeper:latest
-    container_name: zookeeper
-    ports:
-      - "2181:2181"
+    restart: unless-stopped
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - backend
 
   kafka:
     image: wurstmeister/kafka:latest
-    container_name: kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
     ports:
       - "9092:9092"
     environment:
@@ -21,9 +21,117 @@ services:
       KAFKA_LISTENERS: INSIDE://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      #KAFKA_CREATE_TOPICS: "test-topic:1:1"  # Replace with your desired topics
+    networks:
+      - backend
+      - edge
 
+  aggregator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: aggregator
+    restart: unless-stopped
+    environment:
+      AGGREGATOR_HTTP_LISTEN_ADDR: :3001
+      AGGREGATOR_GRPC_LISTEN_ADDR: :3002
+      AGGREGATOR_METRICS_LISTEN_ADDR: :2112
+    expose:
+      - "3001"
+      - "3002"
+      - "2112"
+    networks:
+      - backend
+
+  data-receiver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: data_receiver
+    restart: unless-stopped
     depends_on:
-      - zookeeper
-    links:
-      - zookeeper
+      - kafka
+    environment:
+      DATA_RECEIVER_LISTEN_ADDR: :3000
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      KAFKA_TOPIC: data
+    ports:
+      - "3000:3000"
+    networks:
+      - backend
+      - edge
+
+  distance-calculator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: distance_calculator
+    restart: unless-stopped
+    depends_on:
+      - kafka
+      - aggregator
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      KAFKA_GROUP_ID: myGroup
+      KAFKA_TOPIC: data
+      AGGREGATOR_GRPC_ENDPOINT: aggregator:3002
+    networks:
+      - backend
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: gateway
+    restart: unless-stopped
+    depends_on:
+      - aggregator
+    environment:
+      GATEWAY_LISTEN_ADDR: :6000
+      GATEWAY_AGGREGATOR_ENDPOINT: http://aggregator:3001/invoice
+    ports:
+      - "6000:6000"
+    networks:
+      - backend
+      - edge
+
+  obu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: OBU
+    restart: unless-stopped
+    profiles:
+      - simulator
+    depends_on:
+      - data-receiver
+    environment:
+      OBU_WS_ENDPOINT: ws://data-receiver:3000
+      OBU_SEND_INTERVAL: 5s
+      OBU_COUNT: 20
+    networks:
+      - backend
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    restart: unless-stopped
+    depends_on:
+      - aggregator
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./config/prometheus.docker.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - backend
+      - edge
+
+networks:
+  backend:
+    internal: true
+  edge:

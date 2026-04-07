@@ -6,13 +6,14 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/abdoroot/tolling/internal/envutil"
 	"github.com/abdoroot/tolling/types"
 	"github.com/gorilla/websocket"
 )
 
-var sendInterval = time.Second * 5
+var sendInterval = envutil.Duration("OBU_SEND_INTERVAL", 5*time.Second)
 
-var reciverEndPoind = "ws://localhost:3000"
+var receiverEndPoint = envutil.String("OBU_WS_ENDPOINT", "ws://localhost:3000")
 
 func genCord() float64 {
 	nf := float64(rand.Intn(100) + 1)
@@ -24,8 +25,8 @@ func genLatlog() (float64, float64) {
 }
 
 func main() {
-	obuids := genOBUIDs(20)
-	conn, _, err := websocket.DefaultDialer.Dial(reciverEndPoind, nil)
+	obuids := genOBUIDs(envutil.Int("OBU_COUNT", 20))
+	conn, _, err := websocket.DefaultDialer.Dial(receiverEndPoint, nil)
 	if err != nil {
 		log.Fatal("dial:", err)
 	}

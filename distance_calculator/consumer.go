@@ -19,10 +19,10 @@ type KafkaConsumer struct {
 	aggClient   client.AggregatorClient
 }
 
-func NewKafkaConsumer(topic string, svc CalculateServicer, aggClient client.AggregatorClient) (*KafkaConsumer, error) {
+func NewKafkaConsumer(bootstrapServers, groupID, topic string, svc CalculateServicer, aggClient client.AggregatorClient) (*KafkaConsumer, error) {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost",
-		"group.id":          "myGroup",
+		"bootstrap.servers": bootstrapServers,
+		"group.id":          groupID,
 		"auto.offset.reset": "earliest",
 	})
 

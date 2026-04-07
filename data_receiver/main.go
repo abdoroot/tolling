@@ -4,13 +4,16 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/abdoroot/tolling/internal/envutil"
 	"github.com/abdoroot/tolling/types"
 	"github.com/gorilla/websocket"
 )
 
 var (
-	Topic    = "data"
-	upgrader = websocket.Upgrader{}
+	topic                 = envutil.String("KAFKA_TOPIC", "data")
+	kafkaBootstrapServers = envutil.String("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+	listenAddr            = envutil.String("DATA_RECEIVER_LISTEN_ADDR", ":3000")
+	upgrader              = websocket.Upgrader{}
 )
 
 type DataReceiver struct {
@@ -52,7 +55,7 @@ func (dr *DataReceiver) reciveLoop(c *websocket.Conn) {
 
 func main() {
 	var p DataProducer
-	p, err := NewkafkaProducer(Topic)
+	p, err := NewkafkaProducer(kafkaBootstrapServers, topic)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,5 +65,5 @@ func main() {
 	dr := NewDataReceiver(pm)
 
 	http.HandleFunc("/", dr.handleWc)
-	log.Fatal(http.ListenAndServe(":3000", nil))
+	log.Fatal(http.ListenAndServe(listenAddr, nil))
 }

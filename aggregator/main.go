@@ -7,15 +7,16 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/abdoroot/tolling/internal/envutil"
 	"github.com/abdoroot/tolling/types"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 )
 
 var (
-	HTTPlistenAddr   = ":3001"
-	GRPClistenAddr   = ":3002"
-	MatrixlistenAddr = ":2112"
+	HTTPlistenAddr   = envutil.String("AGGREGATOR_HTTP_LISTEN_ADDR", "127.0.0.1:3001")
+	GRPClistenAddr   = envutil.String("AGGREGATOR_GRPC_LISTEN_ADDR", "127.0.0.1:3002")
+	MatrixlistenAddr = envutil.String("AGGREGATOR_METRICS_LISTEN_ADDR", "127.0.0.1:2112")
 	store            = NewMemoryStore()
 	srv              = NewInvoiceAggregator(store) //service
 )

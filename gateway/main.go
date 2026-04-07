@@ -7,12 +7,13 @@ import (
 	"strconv"
 
 	"github.com/abdoroot/tolling/aggregator/client"
+	"github.com/abdoroot/tolling/internal/envutil"
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	listenAddr  = ":6000"
-	aggEndPoint = "http://127.0.0.1:3001/invoice"
+	listenAddr  = envutil.String("GATEWAY_LISTEN_ADDR", ":6000")
+	aggEndPoint = envutil.String("GATEWAY_AGGREGATOR_ENDPOINT", "http://127.0.0.1:3001/invoice")
 )
 
 type ApiFunc func(w http.ResponseWriter, r *http.Request) error

@@ -4,23 +4,29 @@ import (
 	"fmt"
 
 	"github.com/abdoroot/tolling/aggregator/client"
+	"github.com/abdoroot/tolling/internal/envutil"
 )
 
 const (
-	topic           = "data"
-	aggHTTPEndPoint = "http://127.0.0.1:3001/aggregate"
-	aggGRPCEndPoint = "127.0.0.1:3002"
+	defaultTopic              = "data"
+	defaultKafkaBootstrap     = "localhost:9092"
+	defaultKafkaGroupID       = "myGroup"
+	defaultAggregatorGRPCAddr = "127.0.0.1:3002"
 )
 
 func main() {
-	//HTTPClient := client.NewHTTP(aggHTTPEndPoint)
+	topic := envutil.String("KAFKA_TOPIC", defaultTopic)
+	kafkaBootstrapServers := envutil.String("KAFKA_BOOTSTRAP_SERVERS", defaultKafkaBootstrap)
+	kafkaGroupID := envutil.String("KAFKA_GROUP_ID", defaultKafkaGroupID)
+	aggGRPCEndPoint := envutil.String("AGGREGATOR_GRPC_ENDPOINT", defaultAggregatorGRPCAddr)
+
 	GRPCClient, err := client.NewGRPC(aggGRPCEndPoint)
 	if err != nil {
 		fmt.Println(err)
 	}
 	svc := NewCalculateService()
 	svc = NewLogMiddleware(svc)
-	c, err := NewKafkaConsumer(topic, svc, GRPCClient)
+	c, err := NewKafkaConsumer(kafkaBootstrapServers, kafkaGroupID, topic, svc, GRPCClient)
 	if err != nil {
 		fmt.Println(err)
 	}
